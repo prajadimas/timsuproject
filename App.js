@@ -10,6 +10,7 @@ import {
   DeviceEventEmitter
 } from "react-native";
 import { RNSerialport, definitions, actions } from "react-native-serialport";
+import helpers from "./utils/helpers";
 
 // type Props = {};
 class ManualConnection extends Component {
@@ -20,6 +21,8 @@ class ManualConnection extends Component {
       servisStarted: false,
       connected: false,
       usbAttached: false,
+      tempVal: "",
+      value: "",
       output: "",
       outputArray: [],
       baudRate: "9600",
@@ -112,17 +115,75 @@ class ManualConnection extends Component {
     this.setState({ connected: false });
   }
   onReadData(data) {
-    if (
-      this.state.returnedDataType === definitions.RETURNED_DATA_TYPES.INTARRAY
-    ) {
-      const payload = RNSerialport.intArrayToUtf16(data.payload);
-      this.setState({ output: this.state.output + payload });
-    } else if (
-      this.state.returnedDataType === definitions.RETURNED_DATA_TYPES.HEXSTRING
-    ) {
-      const payload = RNSerialport.hexToUtf16(data.payload);
-      this.setState({ output: this.state.output + payload });
+    const inc_start_bit = data.payload.includes("02");
+    const inc_stop_bit = data.payload.includes("03");
+    if (inc_start_bit) {
+      if (inc_stop_bit) {
+        if (data.payload.indexOf("03") === (data.payload.length - 2)) {
+          this.setState({ value: data.payload });
+        }
+      } else {
+        this.setState({ value: data.payload });
+      }
+    } else {
+      if (inc_stop_bit) {
+        if (data.payload.indexOf("03") === (data.payload.length - 2)) {
+          this.setState({ value: this.state.value + data.payload });
+        }
+      } else {
+        this.setState({ value: this.state.value + data.payload });
+      }
     }
+
+    // if (
+    //   this.state.returnedDataType === definitions.RETURNED_DATA_TYPES.INTARRAY
+    // ) {
+    //   const payload = RNSerialport.intArrayToUtf16(data.payload);
+    //   this.setState({ output: this.state.output + payload });
+    // } else if (
+    //   this.state.returnedDataType === definitions.RETURNED_DATA_TYPES.HEXSTRING
+    // ) {
+    //   const payload = RNSerialport.hexToUtf16(data.payload);
+    //   this.setState({ output: this.state.output + payload });
+    // }
+
+    if (this.state.value.length === 26) {
+      const suValue = helpers.valueAsText(this.state.value);
+      this.setState({ output: this.state.output + suValue + ";" });
+    }
+      // const datasu = this.state.value.substring(2, 24).match(/.{1,2}/g);
+      // if (datasu.join("") !== this.state.tempVal) {
+      //   let polarity = "+";
+      //   let unit = "kg";
+      //   datasu[1] === "2B" ? polarity = "+" : polarity = "-";
+      //   const commpos = Number(datasu[8].slice(-1));
+      //   const suval = [datasu[2], datasu[3], datasu[4], datasu[5], datasu[6], datasu[7]].join("");
+      //   let tempval = RNSerialport.hexToUtf16(suval);
+      //   // const payload = polarity + "" + (tempval.substring(0, tempval.length - commpos) + "." + tempval.substring(tempval.length - commpos, tempval.length)) + "" + unit;
+      //   const payload = (tempval.substring(0, tempval.length - commpos) + "." + tempval.substring(tempval.length - commpos, tempval.length));
+      //   this.setState({ output: this.state.output + payload + ";" });
+      //   this.setState({ tempVal: datasu.join("") });
+      // }
+    // }
+    // this.setState({ output: this.state.value + ";" });
+    // const datasu = data.payload.substring(data.payload.indexOf("02") + 1, data.payload.lastIndexOf("03")).match(/.{1,2}/g);
+    // if (datasu) {
+    //   if (datasu.length === 11) {
+    //     if (datasu.join("") !== this.state.value) {
+    //       let polarity = "+";
+    //       let unit = "kg";
+    //       if (datasu[0] === "0D") {
+    //         datasu[1] === "2B" ? polarity = "+" : polarity = "-";
+    //         const commpos = Number(datasu[8].slice(-1));
+    //         const suval = [datasu[2], datasu[3], datasu[4], datasu[5], datasu[6], datasu[7]].join("");
+    //         let tempval = RNSerialport.hexToUtf16(suval);
+    //         const payload = polarity + "" + (tempval.substring(0, tempval.length - commpos) + "." + tempval.substring(tempval.length - 1, tempval.length)) + "" + unit;
+    //         this.setState({ output: this.state.output + payload });
+    //         this.setState({ value: datasu.join("") });
+    //       }
+    //     }
+    //   }
+    // }
   }
 
   onError(error) {
@@ -130,19 +191,19 @@ class ManualConnection extends Component {
   }
 
   handleConvertButton() {
-    let data = "";
-    if (
-      this.state.returnedDataType === definitions.RETURNED_DATA_TYPES.HEXSTRING
-    ) {
-      data = RNSerialport.hexToUtf16(this.state.output);
-    } else if (
-      this.state.returnedDataType === definitions.RETURNED_DATA_TYPES.INTARRAY
-    ) {
-      data = RNSerialport.intArrayToUtf16(this.state.outputArray);
-    } else {
-      return;
-    }
-    this.setState({ output: data });
+    // let data = "";
+    // if (
+    //   this.state.returnedDataType === definitions.RETURNED_DATA_TYPES.HEXSTRING
+    // ) {
+    //   data = RNSerialport.hexToUtf16(this.state.output);
+    // } else if (
+    //   this.state.returnedDataType === definitions.RETURNED_DATA_TYPES.INTARRAY
+    // ) {
+    //   data = RNSerialport.intArrayToUtf16(this.state.outputArray);
+    // } else {
+    //   return;
+    // }
+    // this.setState({ output: data });
   }
 
   handleClearButton() {
